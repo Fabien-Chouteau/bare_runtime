@@ -93,7 +93,7 @@ package System is
 
    Storage_Unit : constant := 8;
    Word_Size    : constant := Standard'Word_Size;
-   Memory_Size  : constant := 2 ** Word_Size;
+   Memory_Size  : constant := 2 ** Standard'Address_Size;
 
    --  Address comparison
 

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2001-2020, Free Software Foundation, Inc.         --
+--          Copyright (C) 2001-2022, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,111 +29,48 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
---  Simple implementation for use with ZFP
+--  This implementation assumes that the underlying malloc/free/realloc
+--  implementation is thread safe, and thus, no additional lock is required.
 
-pragma Restrictions (No_Elaboration_Code);
---  This unit may be linked without being with'ed, so we need to ensure
---  there is no elaboration code (since this code might not be executed).
-
-with System.Storage_Elements;
+with Ada.Exceptions;
 
 package body System.Memory is
-   use System.Storage_Elements;
 
-   Heap_Start : Character;
-   for Heap_Start'Alignment use Standard'Maximum_Alignment;
-   pragma Import (C, Heap_Start, "__heap_start");
-   --  The address of the variable is the start of the heap
+   use Ada.Exceptions;
 
-   Heap_End : Character;
-   pragma Import (C, Heap_End, "__heap_end");
-   --  The address of the variable is the end of the heap
-
-   Top : aliased Address := Heap_Start'Address;
-   --  First not used address (always aligned to the maximum alignment).
-
-   ----------------
-   -- For C code --
-   ----------------
-
-   function Malloc (Size : size_t) return System.Address;
-   pragma Export (C, Malloc, "malloc");
-
-   function Calloc (N_Elem : size_t; Elem_Size : size_t) return System.Address;
-   pragma Export (C, Calloc, "calloc");
-
-   procedure Free (Ptr : System.Address);
-   pragma Export (C, Free, "free");
+   function c_malloc (Size : size_t) return System.Address;
+   pragma Import (C, c_malloc, "malloc");
 
    -----------
    -- Alloc --
    -----------
 
-   function Alloc (Size : size_t) return System.Address
-   is
-      Max_Align : constant := Standard'Maximum_Alignment;
-      Max_Size  : Storage_Count;
-      Res       : Address;
+   function Alloc (Size : size_t) return System.Address is
+      Result      : System.Address;
+      Actual_Size : size_t := Size;
 
    begin
+      if Size = size_t'Last then
+         Raise_Exception (Storage_Error'Identity, "object too large");
+      end if;
+
+      --  Change size from zero to non-zero. We still want a proper pointer
+      --  for the zero case because pointers to zero length objects have to
+      --  be distinct, but we can't just go ahead and allocate zero bytes,
+      --  since some malloc's return zero for a zero argument.
+
       if Size = 0 then
-
-         --  Change size from zero to nonzero. We still want a proper pointer
-         --  for the zero case because pointers to zero-length objects have to
-         --  be distinct.
-
-         Max_Size := Max_Align;
-
-      else
-         --  Detect overflow in the addition below. Note that we know that
-         --  upper bound of size_t is bigger than the upper bound of
-         --  Storage_Count.
-
-         if Size > size_t (Storage_Count'Last - Max_Align) then
-            raise Storage_Error;
-         end if;
-
-         --  Compute aligned size
-
-         Max_Size :=
-           ((Storage_Count (Size) + Max_Align - 1) / Max_Align) * Max_Align;
+         Actual_Size := 1;
       end if;
 
-      Res := Top;
+      Result := c_malloc (Actual_Size);
 
-      --  Detect too large allocation
-
-      if Max_Size >= Storage_Count (Heap_End'Address - Res) then
-         pragma Annotate
-           (CodePeer, Intentional, "range check", "defensive code");
-         raise Storage_Error;
+      if Result = System.Null_Address then
+         Raise_Exception (Storage_Error'Identity, "heap exhausted");
       end if;
 
-      --  Update the top of the heap.
-      Top := Res + Max_Size;
-
-      return Res;
+      return Result;
    end Alloc;
-
-   ------------
-   -- Malloc --
-   ------------
-
-   function Malloc (Size : size_t) return System.Address is
-   begin
-      return Alloc (Size);
-   end Malloc;
-
-   ------------
-   -- Calloc --
-   ------------
-
-   function Calloc
-     (N_Elem : size_t; Elem_Size : size_t) return System.Address
-   is
-   begin
-      return Malloc (N_Elem * Elem_Size);
-   end Calloc;
 
    ----------
    -- Free --
