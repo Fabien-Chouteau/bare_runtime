@@ -40,7 +40,7 @@ with GNAT.IO; use GNAT.IO;
 --  However, this implementation of Last_Chance_Handler is a default one, that
 --  could be redefined by the user.
 
-with bare_runtime_Config;
+with Bare_Runtime_Config;
 
 procedure Ada.Exceptions.Last_Chance_Handler
   (Msg : System.Address; Line : Integer)
@@ -67,7 +67,7 @@ is
    end Put;
 
 begin
-   if bare_runtime_Config.LCH_Print_Info then
+   if Bare_Runtime_Config.LCH_Print_Info then
       Put_Line ("In last chance handler");
 
       if Line /= 0 then
@@ -83,7 +83,7 @@ begin
       New_Line;
    end if;
 
-   if bare_runtime_Config.LCH_Reset then
+   if Bare_Runtime_Config.LCH_Reset then
       --  Stop the program
 
       System.Machine_Reset.Stop;
