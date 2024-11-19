@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---                     Copyright (C) 1995-2020, AdaCore                     --
+--                     Copyright (C) 1995-2023, AdaCore                     --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,7 +29,22 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-package body GNAT.IO is
+--  Ghost code, loop invariants and assertions in this unit are meant for
+--  analysis only, not for run-time checking, as it would be too costly
+--  otherwise. This is enforced by setting the assertion policy to Ignore.
+
+pragma Assertion_Policy (Ghost          => Ignore,
+                         Loop_Invariant => Ignore,
+                         Assert         => Ignore);
+
+with Ada.Numerics.Big_Numbers.Big_Integers_Ghost;
+use Ada.Numerics.Big_Numbers.Big_Integers_Ghost;
+
+package body GNAT.IO
+with
+  SPARK_Mode,
+  Refined_State => (File_System => null)
+is
 
    procedure Put (C : Character) is separate;
 
@@ -49,22 +64,94 @@ package body GNAT.IO is
    ---------
 
    procedure Put (X : Integer) is
+
+      procedure Lemma_Div_Commutation (X, Y : Integer)
+      with
+        Ghost,
+        Pre  => Y > 0,
+        Post => Big (X) / Big (Y) = Big (X / Y);
+      --  Ghost lemma stating that division and conversion commute
+
+      procedure Lemma_Div_Twice (X : Big_Natural; Y, Z : Big_Positive)
+      with
+        Ghost,
+        Post => X / Y / Z = X / (Y * Z);
+      --  Ghost lemma stating that double division is equivalent to division by
+      --  the product of divisors.
+
+      package Signed_Conversion is new Signed_Conversions (Int => Integer);
+
+      function Big (Arg : Integer) return Big_Integer is
+        (Signed_Conversion.To_Big_Integer (Arg))
+      with Ghost;
+
+      ---------------------------
+      -- Lemma_Div_Commutation --
+      ---------------------------
+
+      procedure Lemma_Div_Commutation (X, Y : Integer) is
+      begin
+         null;
+      end Lemma_Div_Commutation;
+
+      ---------------------
+      -- Lemma_Div_Twice --
+      ---------------------
+
+      procedure Lemma_Div_Twice (X : Big_Natural; Y, Z : Big_Positive) is
+         XY  : constant Big_Natural := X / Y;
+         YZ  : constant Big_Natural := Y * Z;
+         XYZ : constant Big_Natural := X / Y / Z;
+         R   : constant Big_Natural := (XY rem Z) * Y + (X rem Y);
+      begin
+         pragma Assert (X = XY * Y + (X rem Y));
+         pragma Assert (XY = XY / Z * Z + (XY rem Z));
+         pragma Assert (X = XYZ * YZ + R);
+         pragma Assert ((XY rem Z) * Y <= (Z - 1) * Y);
+         pragma Assert (R <= YZ - 1);
+         pragma Assert (X / YZ = (XYZ * YZ + R) / YZ);
+         pragma Assert (X / YZ = XYZ + R / YZ);
+      end Lemma_Div_Twice;
+
+      --  Local variables
+
+      Big_10 : constant Big_Integer := Big (10) with Ghost;
+
       Int   : Integer;
-      S     : String (1 .. Integer'Width);
+      S     : String (1 .. Integer'Width) with Relaxed_Initialization;
       First : Natural := S'Last + 1;
       Val   : Integer;
+
+      Pow      : Big_Integer := 1 with Ghost;
+      Int_Init : Integer with Ghost;
+
+   --  Start of processing for Put
 
    begin
       --  Work on negative values to avoid overflows
       Int := (if X < 0 then X else -X);
+      Int_Init := Int;
 
       loop
+         Lemma_Div_Commutation (Int, 10);
+         Lemma_Div_Twice
+           (-Big (Int_Init), Big_10 ** (S'Last + 1 - First), Big_10);
+
          --  Cf RM 4.5.5 Multiplying Operators.  The rem operator will return
          --  negative values for negative values of Int.
          Val := Int rem 10;
          Int := (Int - Val) / 10;
          First := First - 1;
          S (First) := Character'Val (Character'Pos ('0') - Val);
+
+         Pow := Pow * 10;
+
+         pragma Loop_Variant (Increases => Int);
+         pragma Loop_Invariant (First in 2 .. S'Last);
+         pragma Loop_Invariant (Pow = Big_10 ** (S'Last + 1 - First));
+         pragma Loop_Invariant (-Big (Int) = (-Big (Int_Init)) / Pow);
+         pragma Loop_Invariant (S (First .. S'Last)'Initialized);
+
          exit when Int = 0;
       end loop;
 

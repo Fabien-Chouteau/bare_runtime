@@ -1,0 +1,15 @@
+name = "sanity_check"
+description = ""
+version = "0.1.0-dev"
+
+executables = ["sanity_check"]
+
+[gpr-set-externals]
+BARE_RUNTIME_SWITCHES = "INSERT_BARE_RUNTIME_SWITCHES"
+
+[[depends-on]]
+bare_runtime = "*"
+INSERT_GNAT = "*"
+
+[[pins]]
+bare_runtime = { path='../../..' }

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---                     Copyright (C) 2011-2020, AdaCore                     --
+--                     Copyright (C) 2011-2023, AdaCore                     --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -31,10 +31,15 @@
 
 --  Implementation of Put (C : Character) based on System.Text_IO.
 
+--  It is outside of SPARK because it takes System.Text_IO.Initialized and
+--  System.Semihosting global variables (Buffer and Buffer_Index) as In_Out
+--  globals, but these cannot be part of its contract as g-io.ads is currently
+--  shared between multiple runtimes with different implementations.
+
 with System.Text_IO; use System.Text_IO;
 
 separate (GNAT.IO)
-procedure Put (C : Character) is
+procedure Put (C : Character) with SPARK_Mode => Off is
 begin
    if not Initialized then
       Initialize;

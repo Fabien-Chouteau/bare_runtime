@@ -5,9 +5,9 @@
 --                               S Y S T E M                                --
 --                                                                          --
 --                                 S p e c                                  --
---                             (RISC-V Version)                             --
+--                              (ARM Version)                               --
 --                                                                          --
---         Copyright (C) 2018-2020, Free Software Foundation, Inc.          --
+--          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
 --                                                                          --
 -- This specification is derived from the Ada Reference Manual for use with --
 -- GNAT. The copyright notice above, and the license provisions that follow --
@@ -51,11 +51,6 @@ pragma Restrictions (No_Finalization);
 
 pragma Restrictions (No_Tasking);
 --  Tasking is not supported in this run time
-
-pragma Discard_Names;
---  Disable explicitly the generation of names associated with entities in
---  order to reduce the amount of storage used. These names are not used anyway
---  (attributes such as 'Image and 'Value are not supported in this run time).
 
 package System is
    pragma Pure;
@@ -113,7 +108,7 @@ package System is
 
    type Bit_Order is (High_Order_First, Low_Order_First);
    Default_Bit_Order : constant Bit_Order :=
-     Bit_Order'Val (Standard'Default_Bit_Order);
+                         Bit_Order'Val (Standard'Default_Bit_Order);
    pragma Warnings (Off, Default_Bit_Order); -- kill constant condition warning
 
    --  Priority-related Declarations (RM D.1)
@@ -130,6 +125,8 @@ package System is
 private
 
    type Address is mod Memory_Size;
+   for Address'Size use Standard'Address_Size;
+
    Null_Address : constant Address := 0;
 
    --------------------------------------

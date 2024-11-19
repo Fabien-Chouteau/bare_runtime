@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2020, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -53,9 +53,7 @@ package System.Parameters is
    -- Stack Allocation Control --
    ------------------------------
 
-   type Size_Type is range
-     -(2 ** (Integer'(Standard'Address_Size) - 1)) ..
-     +(2 ** (Integer'(Standard'Address_Size) - 1)) - 1;
+   type Size_Type is range -Memory_Size / 2 .. Memory_Size / 2 - 1;
    --  Type used to provide task stack sizes to the runtime. Sized to permit
    --  stack sizes of up to half the total addressable memory space. This may
    --  seem excessively large (even for 32-bit systems), however there are many
@@ -68,5 +66,26 @@ package System.Parameters is
    Runtime_Default_Sec_Stack_Size : constant Size_Type := 512;
    --  The run-time chosen default size for secondary stacks that may be
    --  overridden by the user with the use of binder -D switch.
+
+   Stack_Grows_Down : constant Boolean := True;
+   --  This constant indicates whether the stack grows up (False) or
+   --  down (True) in memory as functions are called. It is used for
+   --  proper implementation of the stack overflow check.
+
+   ----------------------------------------------
+   -- Characteristics of types in Interfaces.C --
+   ----------------------------------------------
+
+   long_bits : constant := Long_Integer'Size;
+   --  Number of bits in type long and unsigned_long. The normal convention
+   --  is that this is the same as type Long_Integer, but this may not be true
+   --  of all targets.
+
+   ptr_bits  : constant := Standard'Address_Size;
+   subtype C_Address is System.Address;
+   --  Number of bits in Interfaces.C pointers, normally a standard address
+
+   C_Malloc_Linkname : constant String := "__gnat_malloc";
+   --  Name of runtime function used to allocate such a pointer
 
 end System.Parameters;

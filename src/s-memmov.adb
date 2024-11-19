@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---            Copyright (C) 2006-2020, Free Software Foundation, Inc.       --
+--            Copyright (C) 2006-2023, Free Software Foundation, Inc.       --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,7 +29,9 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
+with Ada.Unchecked_Conversion;
 with System.Memory_Types; use System.Memory_Types;
+with System.Storage_Elements; use System.Storage_Elements;
 
 package body System.Memory_Move is
 
@@ -39,9 +41,24 @@ package body System.Memory_Move is
 
    function memmove
      (Dest : Address; Src : Address; N : size_t) return Address is
-      D : IA := To_IA (Dest);
-      S : IA := To_IA (Src);
-      C : IA := IA (N);
+
+      function To_Storage_Offset is new Ada.Unchecked_Conversion
+        (Source => size_t,
+         Target => System.Storage_Elements.Storage_Offset);
+      --  To support targets that use capabilities, Address arithmetic has to
+      --  be performed using the facilities provided by
+      --  System.Storage_Elements. Since size_t and Storage_Offset have
+      --  different ranges (Storage_Offset'Last is about half of size_t'Last),
+      --  large size_t values cannot be safely converted to Storage_Offset
+      --  using a regular type conversion. We instead use
+      --  Unchecked_Conversion, taking advantage that Address is a modular
+      --  type and adding the signed representation representation of size_t
+      --  (Storage_Offset) is equivalent to adding the unsigned representation
+      --  of size_t.
+
+      D : Address := Dest;
+      S : Address := Src;
+      C : size_t  := N;
    begin
       --  There was an early exit if there are no bytes to copy. There are no
       --  reasons to handle this very rare case specially, as it is handled
@@ -51,20 +68,26 @@ package body System.Memory_Move is
       --  and destination. If the Dest buffer is located past the Src buffer
       --  then we use backward copying, and forward copying otherwise.
 
-      if D > S and then D < S + C then
+      if D > S and then D < S + To_Storage_Offset (C) then
 
          --  Backward copy
 
-         D := D + C;
-         S := S + C;
+         D := D + To_Storage_Offset (C);
+         S := S + To_Storage_Offset (C);
 
          --  Try to copy per word, if alignment constraints are respected
 
-         if ((D or S) and (Word'Alignment - 1)) = 0 then
+         if ((To_Integer (D) or To_Integer (S)) and (Word'Alignment - 1)) = 0
+         then
             while C >= Word_Unit loop
-               D := D - Word_Unit;
-               S := S - Word_Unit;
-               To_Word_Ptr (D).all := To_Word_Ptr (S).all;
+               D := D - Storage_Count (Word_Unit);
+               S := S - Storage_Count (Word_Unit);
+               declare
+                  D_W : Word with Import, Address => D;
+                  S_W : Word with Import, Address => S;
+               begin
+                  D_W := S_W;
+               end;
 
                C := C - Word_Unit;
             end loop;
@@ -73,20 +96,31 @@ package body System.Memory_Move is
          --  Copy the remainder byte by byte
 
          while C /= 0 loop
-            D := D - Byte_Unit;
-            S := S - Byte_Unit;
-            To_Byte_Ptr (D).all := To_Byte_Ptr (S).all;
+            D := D - Storage_Count (Byte_Unit);
+            S := S - Storage_Count (Byte_Unit);
+            declare
+               D_B : Byte with Import, Address => D;
+               S_B : Byte with Import, Address => S;
+            begin
+               D_B := S_B;
+            end;
 
             C := C - Byte_Unit;
          end loop;
       else
          --  Try to copy per word, if alignment constraints are respected
 
-         if ((D or S) and (Word'Alignment - 1)) = 0 then
+         if ((To_Integer (D) or To_Integer (S)) and (Word'Alignment - 1)) = 0
+         then
             while C >= Word_Unit loop
-               To_Word_Ptr (D).all := To_Word_Ptr (S).all;
-               D := D + Word_Unit;
-               S := S + Word_Unit;
+               declare
+                  D_W : Word with Import, Address => D;
+                  S_W : Word with Import, Address => S;
+               begin
+                  D_W := S_W;
+               end;
+               D := D + Storage_Count (Word_Unit);
+               S := S + Storage_Count (Word_Unit);
                C := C - Word_Unit;
             end loop;
          end if;
@@ -94,9 +128,14 @@ package body System.Memory_Move is
          --  Copy the remainder byte by byte
 
          while C /= 0 loop
-            To_Byte_Ptr (D).all := To_Byte_Ptr (S).all;
-            D := D + Byte_Unit;
-            S := S + Byte_Unit;
+            declare
+               D_B : Byte with Import, Address => D;
+               S_B : Byte with Import, Address => S;
+            begin
+               D_B := S_B;
+            end;
+            D := D + Storage_Count (Byte_Unit);
+            S := S + Storage_Count (Byte_Unit);
             C := C - Byte_Unit;
          end loop;
       end if;

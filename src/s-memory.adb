@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2001-2020, Free Software Foundation, Inc.         --
+--          Copyright (C) 2001-2023, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -62,8 +62,8 @@ package body System.Memory is
    function Calloc (N_Elem : size_t; Elem_Size : size_t) return System.Address;
    pragma Export (C, Calloc, "calloc");
 
-   procedure Free (Ptr : System.Address);
-   pragma Export (C, Free, "free");
+   procedure C_Free (Ptr : System.Address);
+   pragma Export (C, C_Free, "free");
 
    -----------
    -- Alloc --
@@ -103,7 +103,7 @@ package body System.Memory is
 
       --  Detect too large allocation
 
-      if Max_Size >= Storage_Count (Heap_End'Address - Res) then
+      if Max_Size >= Storage_Count'(Heap_End'Address - Res) then
          pragma Annotate
            (CodePeer, Intentional, "range check", "defensive code");
          raise Storage_Error;
@@ -144,5 +144,14 @@ package body System.Memory is
    begin
       null;
    end Free;
+
+   ------------
+   -- C_Free --
+   ------------
+
+   procedure C_Free (Ptr : System.Address) is
+   begin
+      Free (Ptr);
+   end C_Free;
 
 end System.Memory;

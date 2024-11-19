@@ -1,0 +1,26 @@
+with "config/sanity_check_config.gpr";
+with "bare_runtime.gpr";
+
+project Sanity_Check is
+   for Target use "INSERT_GNAT_TARGET";
+   for Runtime ("Ada") use Bare_Runtime'Runtime ("Ada");
+
+for Source_Dirs use ("src/", "config/");
+   for Object_Dir use "obj/" & Sanity_Check_Config.Build_Profile;
+   for Create_Missing_Dirs use "True";
+   for Exec_Dir use "bin";
+   for Main use ("sanity_check.adb");
+
+   package Compiler is
+      for Default_Switches ("Ada") use Sanity_Check_Config.Ada_Compiler_Switches;
+   end Compiler;
+
+   package Binder is
+      for Switches ("Ada") use ("-Es"); --  Symbolic traceback
+   end Binder;
+
+   package Install is
+      for Artifacts (".") use ("share");
+   end Install;
+
+end Sanity_Check;

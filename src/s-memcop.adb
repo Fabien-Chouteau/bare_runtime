@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---            Copyright (C) 2006-2020, Free Software Foundation, Inc.       --
+--            Copyright (C) 2006-2023, Free Software Foundation, Inc.       --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -30,6 +30,7 @@
 ------------------------------------------------------------------------------
 
 with System.Memory_Types; use System.Memory_Types;
+with System.Storage_Elements; use System.Storage_Elements;
 
 package body System.Memory_Copy is
 
@@ -40,18 +41,24 @@ package body System.Memory_Copy is
    function memcpy
      (Dest : Address; Src : Address; N : size_t) return Address
    is
-      D : IA     := To_IA (Dest);
-      S : IA     := To_IA (Src);
-      C : size_t := N;
+      D : Address := Dest;
+      S : Address := Src;
+      C : size_t  := N;
 
    begin
       --  Try to copy per word, if alignment constraints are respected
 
-      if ((D or S) and (Word'Alignment - 1)) = 0 then
+      if ((To_Integer (D) or To_Integer (S)) and (Word'Alignment - 1)) = 0
+      then
          while C >= Word_Unit loop
-            To_Word_Ptr (D).all := To_Word_Ptr (S).all;
-            D := D + Word_Unit;
-            S := S + Word_Unit;
+            declare
+               D_W : Word with Import, Address => D;
+               S_W : Word with Import, Address => S;
+            begin
+               D_W := S_W;
+            end;
+            D := D + Storage_Count (Word_Unit);
+            S := S + Storage_Count (Word_Unit);
             C := C - Word_Unit;
          end loop;
       end if;
@@ -59,9 +66,14 @@ package body System.Memory_Copy is
       --  Copy the remaining byte per byte
 
       while C > 0 loop
-         To_Byte_Ptr (D).all := To_Byte_Ptr (S).all;
-         D := D + Byte_Unit;
-         S := S + Byte_Unit;
+         declare
+            D_B : Byte with Import, Address => D;
+            S_B : Byte with Import, Address => S;
+         begin
+            D_B := S_B;
+         end;
+         D := D + Storage_Count (Byte_Unit);
+         S := S + Storage_Count (Byte_Unit);
          C := C - Byte_Unit;
       end loop;
 

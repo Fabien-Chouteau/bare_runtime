@@ -3,7 +3,6 @@ with "target_options.gpr";
 project Bare_Runtime is
 
   for Languages use ("Ada");
-
   for Runtime ("Ada") use Project'Project_Dir;
 
   for Library_Auto_Init use "False";
@@ -11,7 +10,7 @@ project Bare_Runtime is
   for Library_Kind use "static";
 
   for Library_Dir use "adalib";
-  for Object_Dir use "obj";
+  for Object_Dir use "obj-" & Project'Target;
 
   for Source_Dirs use ("src");
 

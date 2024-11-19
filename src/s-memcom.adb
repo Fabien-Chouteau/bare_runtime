@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---            Copyright (C) 2006-2020, Free Software Foundation, Inc.       --
+--            Copyright (C) 2006-2023, Free Software Foundation, Inc.       --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,7 +29,8 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with System.Memory_Types; use System.Memory_Types;
+with System.Memory_Types;     use System.Memory_Types;
+with System.Storage_Elements; use System.Storage_Elements;
 
 package body System.Memory_Compare is
 
@@ -38,41 +39,60 @@ package body System.Memory_Compare is
    ------------
 
    function memcmp (S1 : Address; S2 : Address; N : size_t) return Integer is
-      S1_A  : IA := To_IA (S1);
-      S2_A  : IA := To_IA (S2);
+      S1_A  : Address := S1;
+      S2_A  : Address := S2;
       C     : size_t := N;
       V1, V2 : Byte;
 
    begin
       --  Try to compare word by word if alignment constraints are respected.
       --  Compare as long as words are equal.
+      pragma Annotate (Gnatcheck, Exempt_On, "Exits_From_Conditional_Loops",
+                       "early return on failed comparison");
 
-      if ((S1_A or S2_A) and (Word'Alignment - 1)) = 0 then
+      if ((To_Integer (S1) or To_Integer (S2)) and (Word'Alignment - 1)) = 0
+      then
          while C >= Word_Unit loop
-            exit when To_Word_Ptr (S1_A).all /= To_Word_Ptr (S2_A).all;
-            S1_A := S1_A + Word_Unit;
-            S2_A := S2_A + Word_Unit;
+            declare
+               S1_W : Word with Import, Address => S1_A;
+               S2_W : Word with Import, Address => S2_A;
+            begin
+               exit when S1_W /= S2_W;
+            end;
+            S1_A := S1_A + Storage_Count (Word_Unit);
+            S2_A := S2_A + Storage_Count (Word_Unit);
             C := C - Word_Unit;
          end loop;
       end if;
+      pragma Annotate (Gnatcheck, Exempt_Off, "Exits_From_Conditional_Loops");
 
       --  Finish byte per byte
+      pragma Annotate (Gnatcheck, Exempt_On, "Improper_Returns",
+                       "early returns for performance");
 
       while C > 0 loop
-         V1 := To_Byte_Ptr (S1_A).all;
-         V2 := To_Byte_Ptr (S2_A).all;
+         declare
+            S1_B : Byte with Import, Address => S1_A;
+            S2_B : Byte with Import, Address => S2_A;
+         begin
+            V1 := S1_B;
+            V2 := S2_B;
+         end;
+
          if V1 < V2 then
             return -1;
          elsif V1 > V2 then
             return 1;
          end if;
 
-         S1_A := S1_A + Byte_Unit;
-         S2_A := S2_A + Byte_Unit;
+         S1_A := S1_A + Storage_Count (Byte_Unit);
+         S2_A := S2_A + Storage_Count (Byte_Unit);
          C := C - Byte_Unit;
       end loop;
 
       return 0;
+
+      pragma Annotate (Gnatcheck, Exempt_Off, "Improper_Returns");
    end memcmp;
 
 end System.Memory_Compare;

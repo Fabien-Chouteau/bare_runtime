@@ -2,11 +2,11 @@
 --                                                                          --
 --                         GNAT RUN-TIME COMPONENTS                         --
 --                                                                          --
---                        S Y S T E M . T E X T _ I O                       --
+--                       S Y S T E M . T E X T _ I O                        --
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---            Copyright (C) 2011-2015, Free Software Foundation, Inc.       --
+--             Copyright (C) 2017-2023, Free Software Foundation, Inc.      --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -32,8 +32,6 @@
 --  Really simple implementation of System.Text_IO for systems without
 --  console.
 
---  with bare_runtime_Config;
-
 package body System.Text_IO is
 
    ---------
@@ -42,7 +40,6 @@ package body System.Text_IO is
 
    function Get return Character is
    begin
-      --  Will never be called.
       raise Program_Error;
       return ASCII.NUL;
    end Get;
@@ -82,9 +79,7 @@ package body System.Text_IO is
       procedure putchar (C : Integer);
       pragma Import (C, putchar, "putchar");
    begin
-      --  if bare_runtime_Config.Enable_Text_IO then
       putchar (Character'Pos (C));
-      --  end if;
    end Put;
 
    ----------------------------

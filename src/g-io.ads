@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---                     Copyright (C) 1995-2020, AdaCore                     --
+--                     Copyright (C) 1995-2023, AdaCore                     --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -40,24 +40,39 @@
 
 --  This is the zfp version of GNAT.IO package
 
-package GNAT.IO is
+package GNAT.IO
+with
+  SPARK_Mode,
+  Abstract_State => (File_System),
+  Initializes    => (File_System)
+is
    pragma Preelaborate;
 
-   procedure Put (X : Integer);
+   procedure Put (X : Integer)
+   with
+     Global => (In_Out => File_System);
    --  Output integer to specified file, or to current output file, same
    --  output as if Ada.Text_IO.Integer_IO had been instantiated for Integer.
 
-   procedure Put (C : Character);
+   procedure Put (C : Character)
+   with
+     Global => (In_Out => File_System);
    --  Output character to specified file, or to current output file
 
-   procedure Put (S : String);
+   procedure Put (S : String)
+   with
+     Global => (In_Out => File_System);
    --  Output string to specified file, or to current output file
 
-   procedure Put_Line (S : String);
+   procedure Put_Line (S : String)
+   with
+     Global => (In_Out => File_System);
    --  Output string followed by new line to specified file, or to
    --  current output file.
 
-   procedure New_Line (Spacing : Positive := 1);
+   procedure New_Line (Spacing : Positive := 1)
+   with
+     Global => (In_Out => File_System);
    --  Output new line character to specified file, or to current output file
 
 end GNAT.IO;

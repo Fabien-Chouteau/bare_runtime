@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2020, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -33,20 +33,30 @@
 --  Reference Manual. It is a stripped down version for ZFP and bare-board
 --  runtimes.
 
-package Ada.Text_IO is
-   procedure Get (C : out Character);
+package Ada.Text_IO with
+  SPARK_Mode,
+  Abstract_State => File_System,
+  Initializes    => File_System,
+  Always_Terminates
+is
+   procedure Get (C : out Character) with
+     Global => (In_Out => File_System);
    --  Read from console
 
-   procedure Put (Item : Character);
+   procedure Put (Item : Character) with
+     Global => (In_Out => File_System);
    --  Output character to the console
 
-   procedure Put (Item : String);
+   procedure Put (Item : String) with
+     Global => (In_Out => File_System);
    --  Output string to the console
 
-   procedure Put_Line (Item : String);
+   procedure Put_Line (Item : String) with
+     Global => (In_Out => File_System);
    --  Output string followed by new line to the console
 
-   procedure New_Line;
+   procedure New_Line with
+     Global => (In_Out => File_System);
    --  Output new line character to the console
 
 end Ada.Text_IO;

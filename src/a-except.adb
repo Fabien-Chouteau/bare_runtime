@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2020, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -35,7 +35,7 @@ package body Ada.Exceptions is
    pragma Import (C, Last_Chance_Handler, "__gnat_last_chance_handler");
    pragma No_Return (Last_Chance_Handler);
 
-   Empty_C_String : aliased constant String := (1 => ASCII.NUL);
+   Empty_C_String : aliased constant String := [ASCII.NUL];
 
    procedure Call_Last_Chance_Handler_With_Message (Message : String);
    pragma No_Return (Call_Last_Chance_Handler_With_Message);

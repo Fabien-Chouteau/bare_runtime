@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2020, Free Software Foundation, Inc.         --
+--             Copyright (C) 2017-2023, Free Software Foundation, Inc.      --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -33,7 +33,10 @@
 
 with System.Text_IO; use System.Text_IO;
 
-package body Ada.Text_IO is
+package body Ada.Text_IO with
+  SPARK_Mode => Off,
+  Refined_State => (File_System => null)
+is
 
    ---------
    -- Get --
