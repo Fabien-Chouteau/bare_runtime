@@ -1,0 +1,19 @@
+name = "example"
+description = ""
+version = "0.1.0-dev"
+
+executables = ["example"]
+[gpr-set-externals]
+BARE_RUNTIME_SWITCHES = "-mlittle-endian -mthumb -mfloat-abi=soft -mcpu=cortex-m0"
+  
+[[depends-on]]
+bare_runtime = "*"
+gnat_arm_elf = "*"
+
+[[pins]]
+bare_runtime = { path = ".." }
+
+[[actions]]
+type = "test"
+command = ["qemu-system-arm", "-nographic", "-no-reboot", "-M", "microbit", 
+           "-device", "loader,file=bin/example"]

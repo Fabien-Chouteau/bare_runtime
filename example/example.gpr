@@ -1,0 +1,50 @@
+with "config/example_config.gpr";
+with "bare_runtime.gpr";
+
+project Example is
+   for Target use "arm-eabi";
+   for Runtime ("Ada") use Bare_Runtime'Runtime ("Ada");
+
+   for Languages use ("Ada", "ASM_CPP");
+   for Source_Dirs use ("src/", "config/");
+   for Object_Dir use "obj/" & Example_Config.Build_Profile;
+   for Create_Missing_Dirs use "True";
+   for Exec_Dir use "bin";
+   for Main use ("example.adb");
+
+   package Compiler is
+      for Default_Switches ("Ada") use Example_Config.Ada_Compiler_Switches;
+   end Compiler;
+
+   package Linker is
+      for Switches ("Ada") use ("-T",  Project'Project_Dir & "/src/link.ld");
+   end Linker;
+
+   package Binder is
+      for Switches ("Ada") use ("-Es"); --  Symbolic traceback
+   end Binder;
+
+   package Install is
+      for Artifacts (".") use ("share");
+   end Install;
+
+   package Device_Configuration is
+
+      for CPU_Name use "ARM Cortex-M0";
+      for Float_Handling use "soft";
+      for Number_Of_Interrupts use "42";
+
+      for Memories use ("FLASH", "RAM");
+      for Boot_Memory use "FLASH";
+
+      for Mem_Kind ("FLASH") use "rom";
+      for Address ("FLASH") use "0x00000000";
+      for Size ("FLASH") use "256K";
+
+      for Mem_Kind ("RAM") use "ram";
+      for Address ("RAM") use "0x20000000";
+      for Size ("RAM") use "16K";
+
+   end Device_Configuration;
+
+end Example;
