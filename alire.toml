@@ -1,6 +1,6 @@
 name = "bare_runtime"
 description = "Minimal Ada/SPARK run-time for embedded or other restricted targets"
-version = "14.0.0-dev"
+version = "14.0.0"
 
 long-description = """
 ## Usage
