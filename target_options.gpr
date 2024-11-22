@@ -15,7 +15,9 @@ abstract project Target_Options is
   COMGNARLFLAGS := ("");
 
   --  Per language flags (COMFLAGS will be added later)
-  ADAFLAGS := ("-gnatg", "-nostdinc", "-fno-delete-null-pointer-checks");
+  ADAFLAGS := ("-gnatg", "-nostdinc", "-fno-delete-null-pointer-checks",
+               "-gnaty-d" -- Disable DOS line check
+	       );
   ASMFLAGS := ("");
   CFLAGS := ("-DIN_RTS",
         "-Dinhibit_libc", "-Werror", "-Wall");
